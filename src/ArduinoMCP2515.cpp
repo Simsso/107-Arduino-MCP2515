@@ -221,3 +221,67 @@ void ArduinoMCP2515::onReceiveBuffer_n_Full(unsigned long const timestamp_us, ui
 #endif
   }
 }
+
+void prepareId(uint8_t *buffer, const uint32_t id)
+{
+  // When using standard identifiers (11 bits), the remaining eighteen 
+  // bits of the mask and filters are matched to the first two data bytes,
+  // with the two most significant bits of those eighteen bits left unused.
+  // (11 + 2 + 16 = 29)
+  uint16_t canid = (uint16_t)(id & 0x0FFFF);
+
+  buffer[0] = (uint8_t) (canid >> 3);
+  buffer[1] = (uint8_t) ((canid & 0x07 ) << 5);
+  buffer[2] = 0;
+  buffer[3] = 0;
+}
+
+void ArduinoMCP2515::setFilterMask(const uint8_t mask_id, const uint32_t ulData)
+{
+  // Call this function in config mode. It only supports standard IDs (not EXT ones).
+  // Parameter 'mask_id' is either 0 or 1 (which mask to use).
+  // Parameter 'ulData' is the mask itself.
+  // Only the least significant 11 bits of ulData are used.
+  
+  uint8_t tbufdata[4];
+  prepareId(tbufdata, ulData);
+
+  Register reg;
+  switch (mask_id) {
+      case 0: 
+        reg = MCP2515::Register::RXM0SIDH;
+        _io.modifyRegister(MCP2515::Register::RXB0CTRL,
+          RXBnCTRL_RXM_MASK | RXB0CTRL_BUKT | RXB0CTRL_FILHIT_MASK,
+          RXBnCTRL_RXM_STDEXT | RXB0CTRL_BUKT | RXB0CTRL_FILHIT);
+        break;
+      case 1:
+        reg = MCP2515::Register::RXM1SIDH;
+        _io.modifyRegister(MCP2515::Register::RXB1CTRL,
+          RXBnCTRL_RXM_MASK | RXB1CTRL_FILHIT_MASK,
+          RXBnCTRL_RXM_STDEXT | RXB1CTRL_FILHIT);
+        break;
+      default: return;
+  }
+
+  _io.writeRegister(reg, tbufdata, 4);
+}
+
+void ArduinoMCP2515::setFilter(const uint8_t filter_num, const uint32_t ulData)
+{
+  // Call this function in config mode. It only supports standard IDs (not EXT ones).
+  // Parameter 'filter_num' is in [0,6).
+  Register reg;
+  switch (filter_num) {
+    case 0: reg = MCP2515::Register::RXF0SIDH; break;
+    case 1: reg = MCP2515::Register::RXF1SIDH; break;
+    case 2: reg = MCP2515::Register::RXF2SIDH; break;
+    case 3: reg = MCP2515::Register::RXF3SIDH; break;
+    case 4: reg = MCP2515::Register::RXF4SIDH; break;
+    case 5: reg = MCP2515::Register::RXF5SIDH; break;
+    default: return;
+  }
+
+  uint8_t tbufdata[4];
+  prepareId(tbufdata, ulData);
+  _io.writeRegister(reg, tbufdata, 4);
+}

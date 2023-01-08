@@ -82,6 +82,9 @@ public:
   void begin();
 
   void setBitRate(CanBitRate const bit_rate);
+  void setFilterMask(const uint8_t mask, const uint32_t ulData);
+  void setFilter(const uint8_t filter_num, const uint32_t ulData);
+  void enableFiltering();
 
   inline bool setNormalMode    () { return _cfg.setMode(MCP2515::Mode::Normal);     }
   inline bool setSleepMode     () { return _cfg.setMode(MCP2515::Mode::Sleep);      }
@@ -103,6 +106,18 @@ private:
   MCP2515::MCP2515_Io _io;
   MCP2515::MCP2515_Config _cfg;
   MCP2515::MCP2515_Control _ctrl;
+  
+  static const uint8_t RXBnCTRL_RXM_STD    = 0x20;
+  static const uint8_t RXBnCTRL_RXM_EXT    = 0x40;
+  static const uint8_t RXBnCTRL_RXM_STDEXT = 0x00;
+  static const uint8_t RXBnCTRL_RXM_MASK   = 0x60;
+  static const uint8_t RXBnCTRL_RTR        = 0x08;
+  static const uint8_t RXB0CTRL_BUKT       = 0x04;
+  static const uint8_t RXB0CTRL_FILHIT_MASK = 0x03;
+  static const uint8_t RXB1CTRL_FILHIT_MASK = 0x07;
+  static const uint8_t RXB0CTRL_FILHIT = 0x00;
+  static const uint8_t RXB1CTRL_FILHIT = 0x01;
+
   MicroSecondFunc _micros;
   OnReceiveBufferFullFunc _on_rx_buf_full;
   OnTransmitBufferEmptyFunc _on_tx_buf_empty;
